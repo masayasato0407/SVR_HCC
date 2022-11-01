@@ -125,7 +125,7 @@ st.image ("img.png")
 if rfscore < 0.80: 
     st.subheader("Risk grouping for HCC in the original article: Low risk")
     st.markdown("HCC incidence in the low-risk group of the original study cohort: 0/1000 person-year (95%CI:0-5)")
-elif rfscore <= 3.01: 
+elif rfscore >= 3.01: 
     st.subheader("Risk grouping for HCC in the original article: High risk")
     st.markdown("HCC incidence in the high-risk group of the original study cohort: 16 /1000 person-year (95%CI: 11-24)")
 else:
