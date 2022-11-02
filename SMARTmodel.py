@@ -18,7 +18,11 @@ import pickle
 # In[ ]:
 
 
-rsf = pickle.load(open("rfmodel.sav", 'rb'))
+@st.cache (allow_output_mutation=True) 
+def load_model():
+    return pickle.load(open("rfmodel.sav", 'rb'))
+
+rsf = load_model()
 
 
 # In[ ]:
