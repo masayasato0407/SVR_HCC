@@ -55,7 +55,7 @@ with st.form('user_inputs'):
 if gender == 'male': 
   gender = 1
 
-elif gender == 'female':
+else:
   gender = 0 
 
 
