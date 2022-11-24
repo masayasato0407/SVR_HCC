@@ -27,7 +27,7 @@ with st.form('user_inputs'):
   AFP=st.number_input('AFP (ng/mL)', min_value=0.0) 
   ALB=st.number_input('Albumin (g/dL)', min_value=0.0) 
   AST=st.number_input('AST (IU/L)', min_value=0)
-  GGT=st.number_input('γ-GTP (IU/L)', min_value=0 
+  GGT=st.number_input('GGT (IU/L)', min_value=0)
   st.form_submit_button() 
 
 surv = rsf.predict_survival_function(pd.DataFrame(
