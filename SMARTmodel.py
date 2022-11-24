@@ -22,7 +22,7 @@ st.markdown("Enter the following items to display the predicted HCC risk")
 with st.form('user_inputs'): 
   age=st.number_input('age (year)', min_value=0) 
   BMI=st.number_input('Body mass index', min_value=0.0) 
-  PLT=st.number_input('Platelet count (×10^4/µL)', min_value=0.0)
+  PLT=st.number_input('Platelet count (×10^4/µL)', min_value=0.0,max_value=100.0)
   AFP=st.number_input('AFP (ng/mL)', min_value=0.0) 
   ALB=st.number_input('Albumin (g/dL)', min_value=0.0) 
   AST=st.number_input('AST (IU/L)', min_value=0)
