@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
-
-
 import streamlit as st
 import sksurv
 from sksurv.linear_model import CoxPHSurvivalAnalysis
@@ -14,27 +11,14 @@ import numpy as np
 from sksurv.ensemble import RandomSurvivalForest
 import pickle
 
+@st.cache (allow_output_mutation=True) 
+def load_model():
+    return pickle.load(open("smartmodel.sav", 'rb'))
 
-# In[ ]:
-
-
-rsf = pickle.load(open("smartmodel.sav", 'rb'))
-
-
-# In[ ]:
-
+rsf = load_model()
 
 st.title('Prediction model for post-SVR HCC (SMART model)') 
-
-
-# In[ ]:
-
-
 st.markdown("Enter the following items to display the predicted HCC risk")
-
-
-# In[ ]:
-
 
 with st.form('user_inputs'): 
   age=st.number_input('age (year)', min_value=0) 
@@ -45,10 +29,6 @@ with st.form('user_inputs'):
   AST=st.number_input('AST (IU/L)', min_value=0)
   GGT=st.number_input('γ-GTP (IU/L)', min_value=0)
   st.form_submit_button() 
-
-
-# In[ ]:
-
 
 surv = rsf.predict_survival_function(pd.DataFrame(
     data={'age': [age],
@@ -75,10 +55,6 @@ plt.yticks([0.0, 0.2, 0.4,0.6,0.8,1.0],
             ['100%', '80%', '60%', '40%', '20%', '0%'])
 plt.savefig("img.png")
 
-
-# In[ ]:
-
-
 X=pd.DataFrame(
     data={'age': [age],
           'BMI': [BMI],
@@ -91,32 +67,13 @@ X=pd.DataFrame(
 )
 
 
-# In[ ]:
-
-
 rfscore0=pd.Series(rsf.predict(X))
-
-
-# In[ ]:
-
 
 rfscore=float(rfscore0)
 
-
-# In[ ]:
-
-
 st.header("HCC risk for submitted patient")
 
-
-# In[ ]:
-
-
 st.image ("img.png")
-
-
-# In[ ]:
-
 
 if rfscore < 0.956: 
     st.subheader("Risk grouping for HCC in the original article: Low risk")
