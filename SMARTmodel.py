@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # coding: utf-8
-
 import streamlit as st
 import sksurv
 from sksurv.linear_model import CoxPHSurvivalAnalysis
@@ -66,7 +65,6 @@ X=pd.DataFrame(
          }
 )
 
-
 rfscore0=pd.Series(rsf.predict(X))
 
 rfscore=float(rfscore0)
@@ -84,4 +82,3 @@ elif rfscore >= 3.20:
 else:
     st.subheader("Risk grouping for HCC in the original article: Intermediate risk")
     st.markdown("HCC incidence in the intermediate-risk group of the original study cohort: 3/1000 person-year (95%CI:1-6/1000)")
-
