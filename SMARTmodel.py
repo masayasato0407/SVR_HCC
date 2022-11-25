@@ -55,7 +55,6 @@ plt.xlabel("years")
 plt.grid(True)
 
 plt.gca().invert_yaxis()
-
 plt.yticks([0.0, 0.2, 0.4,0.6,0.8,1.0],
             ['100%', '80%', '60%', '40%', '20%', '0%'])
 plt.savefig("img.png")
@@ -72,11 +71,9 @@ X=pd.DataFrame(
 )
 
 rfscore0=pd.Series(rsf.predict(X))
-
 rfscore=float(rfscore0)
 
 st.header("HCC risk for submitted patient")
-
 st.image ("img.png")
 
 if rfscore < 0.956: 
