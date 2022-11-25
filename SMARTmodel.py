@@ -24,7 +24,7 @@ with st.form('user_inputs'):
   age=st.number_input('age (year)', min_value=0) 
   height=st.number_input('height (cm)', min_value=100.0) 
   weight=st.number_input('body weight (kg)', min_value=10.0)     
-  PLT=st.number_input('Platelet count (×10^4/µL)', min_value=0.0)
+  PLT=st.number_input('Platelet count (×10^4/µL)', min_value=0.0,max_value=100.0)
   AFP=st.number_input('AFP (ng/mL)', min_value=0.0) 
   ALB=st.number_input('Albumin (g/dL)', min_value=0.0) 
   AST=st.number_input('AST (IU/L)', min_value=0)
