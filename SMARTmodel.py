@@ -92,5 +92,6 @@ y_event = rsf.predict_survival_function(X, return_array=True).flatten()
 st.subheader("Timing of Events (HCC)")
 st.markdown(rsf.event_times_)
 
-st.subheader("HCC incidence rates at each of the above 'Timing of Events (HCC)'")
-st.markdown(1-y_event)
+HCCincidence=(1-y_event)
+st.subheader("HCC incidence rates (%) at each of the above 'Timing of Events (HCC)'")
+st.markdown(100*HCCincidence)
