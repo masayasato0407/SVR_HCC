@@ -89,9 +89,14 @@ else:
 y_pred = rsf.predict(X).flatten()[0]
 y_event = rsf.predict_survival_function(X, return_array=True).flatten()
 
-st.subheader("Timing of Events (HCC)")
-st.markdown(rsf.event_times_)
+HCCincidence0=(1-y_event)
+HCCincidence=100*(1-y_event)
 
-HCCincidence=(1-y_event)
-st.subheader("HCC incidence rates (%) at each of the above 'Timing of Events (HCC)'")
-st.markdown(100*HCCincidence)
+df1 = pd.DataFrame(rsf.event_times_)
+df1.columns = ['timepoint (year)']
+df2 = pd.DataFrame(HCCincidence)
+df2.columns = ['predicted HCC incidence (%)']
+df_merge = pd.concat([df1.reset_index(drop=True), df2.reset_index(drop=True)], axis=1)
+
+st.subheader("predicted HCC incidence (%) at each time point")
+st.dataframe (df_merge)
