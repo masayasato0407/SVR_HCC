@@ -100,3 +100,10 @@ df_merge = pd.concat([df1.reset_index(drop=True), df2.reset_index(drop=True)], a
 
 st.subheader("predicted HCC incidence (%) at each time point")
 st.dataframe (df_merge)
+
+csv = df_merge.to_csv().encode('SHIFT-JIS')
+st.download_button(label='Data Download', 
+                   data=csv, 
+                   file_name='simulation.csv',
+                   mime='text/csv',
+                   )
