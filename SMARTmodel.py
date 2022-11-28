@@ -86,3 +86,11 @@ else:
     st.subheader("Risk grouping for HCC in the original article: Intermediate risk")
     st.markdown("HCC incidence in the intermediate-risk group of the original study cohort: 3/1000 person-year (95%CI:1-6/1000)")
 
+y_pred = rsf.predict(X).flatten()[0]
+y_event = rsf.predict_survival_function(X, return_array=True).flatten()
+
+st.subheader("Timing of Events (HCC)")
+st.markdown(rsf.event_times_)
+
+st.subheader("HCC incidence rates at each of the above 'Timing of Events (HCC)'")
+st.markdown(1-y_event)
