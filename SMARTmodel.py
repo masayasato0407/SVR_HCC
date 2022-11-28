@@ -99,7 +99,7 @@ df2.columns = ['predicted HCC incidence (%)']
 df_merge = pd.concat([df1.reset_index(drop=True), df2.reset_index(drop=True)], axis=1)
 
 st.subheader("predicted HCC incidence (%) at each time point")
-st.dataframe (df_merge)
+st.dataframe (df_merge,600,800)
 
 csv = df_merge.to_csv().encode('SHIFT-JIS')
 st.download_button(label='Data Download', 
