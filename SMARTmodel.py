@@ -98,9 +98,20 @@ df2 = pd.DataFrame(HCCincidence)
 df2.columns = ['predicted HCC incidence (%)']
 df_merge = pd.concat([df1.reset_index(drop=True), df2.reset_index(drop=True)], axis=1)
 
-st.subheader("predicted HCC incidence (%) at each time point")
-st.dataframe (df_merge,600,800)
+one0=df_merge.iloc[18,1]
+one=round(one0, 1)
+three0=df_merge.iloc[47,1]
+three=round(three0, 1)
+five0=df_merge.iloc[63,1]
+five=round(five0, 1)
 
+st.subheader("predicted HCC incidence at each time point")
+st.write(f"**predicted HCC incidence at 1 year:** {one}%")
+st.write(f"**predicted HCC incidence at 3 year:** {three}%")
+st.write(f"**predicted HCC incidence at 5 year:** {five}%")
+
+st.markdown("Raw data")
+st.dataframe (df_merge,600,800)
 csv = df_merge.to_csv().encode('SHIFT-JIS')
 st.download_button(label='Data Download', 
                    data=csv, 
