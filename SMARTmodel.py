@@ -17,7 +17,6 @@ def load_model():
 rsf = load_model()
 
 st.title('Prediction model for post-SVR HCC (SMART model)') 
-
 st.markdown("Enter the following items to display the predicted HCC risk")
 
 with st.form('user_inputs'): 
@@ -86,7 +85,6 @@ else:
 y_pred = rsf.predict(X).flatten()[0]
 y_event = rsf.predict_survival_function(X, return_array=True).flatten()
 
-HCCincidence0=(1-y_event)
 HCCincidence=100*(1-y_event)
 
 df1 = pd.DataFrame(rsf.event_times_)
