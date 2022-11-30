@@ -94,11 +94,11 @@ df2.columns = ['predicted HCC incidence (%)']
 df_merge = pd.concat([df1.reset_index(drop=True), df2.reset_index(drop=True)], axis=1)
 
 one0=df_merge.iloc[18,1]
-one=round(one0, 2)
+one=round(one0, 3)
 three0=df_merge.iloc[47,1]
-three=round(three0, 2)
+three=round(three0, 3)
 five0=df_merge.iloc[63,1]
-five=round(five0, 2)
+five=round(five0, 3)
 
 st.subheader("predicted HCC incidence at each time point")
 st.write(f"**predicted HCC incidence at 1 year:** {one}%")
