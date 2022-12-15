@@ -106,7 +106,7 @@ st.write(f"**predicted HCC incidence at 3 year:** {three}%")
 st.write(f"**predicted HCC incidence at 5 year:** {five}%")
 
 st.markdown("Raw data")
-st.dataframe (df_merge,600,800)
+st.dataframe (df_merge.to_string(index=False),600,800)
 csv = df_merge.to_csv(index=False).encode('SHIFT-JIS')
 st.download_button(label='Data Download', 
                    data=csv, 
