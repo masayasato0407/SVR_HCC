@@ -92,6 +92,7 @@ df1.columns = ['timepoint (year)']
 df2 = pd.DataFrame(HCCincidence)
 df2.columns = ['predicted HCC incidence (%)']
 df_merge = pd.concat([df1.reset_index(drop=True), df2.reset_index(drop=True)], axis=1)
+df_merge.to_string(index = False)
 
 one0=df_merge.iloc[18,1]
 one=round(one0, 3)
