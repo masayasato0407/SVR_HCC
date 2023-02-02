@@ -16,3 +16,4 @@ This model, using seven commonly measured parameters could provide a personalize
 #### Link to paper describing SMART model
 #### TBD
 
+#### Graphical Abstract
