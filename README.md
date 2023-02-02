@@ -17,3 +17,5 @@ This model, using seven commonly measured parameters could provide a personalize
 #### TBD
 
 #### Graphical Abstract
+
+![GraphicalAbstract](https://user-images.githubusercontent.com/25998707/216274663-68d71c3d-cb10-4abd-b000-28b010ed0407.jpg)
