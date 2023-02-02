@@ -14,5 +14,4 @@ Then the prediction curve for the development of HCC for each patient, as predic
 This model, using seven commonly measured parameters could provide a personalized surveillance system. 
 
 #### Link to paper describing SMART model
-
 #### TBD
