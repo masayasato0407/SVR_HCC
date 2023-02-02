@@ -1,7 +1,7 @@
 # SMART model: Prediction of hepatocellular carcinoma development after the eradication of hepatitis C virus with antivirals
 This is a novel prediction model for hepatocellular carcinoma (HCC) occurrence in patients after hepatitis C virus eradication was developed using machine learning algorithms. 
 
-Enter the following information.
+Enter the following fields and click the "Submit" bottun.
 1. age
 2. Body mass index (height [cm] and body weight [kg])
 3. Platelet count (×10^4/µL)
