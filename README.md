@@ -13,8 +13,8 @@ Enter the following information.
 Then the prediction curve for the development of HCC for each patient, as predicted by the machine learning model (SMART model), is displayed individually. 
 This model, using seven commonly measured parameters could provide a personalized surveillance system. 
 
-#### Link to the SMART model:https://smartmodel.streamlit.app/
-#### Link to paper describing SMART model:TBD
+#### Link to the SMART model: https://smartmodel.streamlit.app/
+#### Link to paper describing SMART model: TBD
 
 #### Graphical Abstract
 
