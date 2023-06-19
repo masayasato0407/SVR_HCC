@@ -10,7 +10,7 @@ import numpy as np
 from sksurv.ensemble import RandomSurvivalForest
 import pickle
 
-@st.cache_data 
+@st.cache_resource 
 def load_model():
     return pickle.load(open("smartmodel.sav", 'rb'))
 
