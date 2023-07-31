@@ -61,6 +61,17 @@ plt.savefig("img.png")
 st.header("HCC risk for submitted patient")
 st.image ("img.png")
 
+X=pd.DataFrame(
+    data={'age': [age],
+          'BMI': [BMI],
+          'PLT': [PLT],
+          'AFP': [AFP],
+          'ALB': [ALB],
+          'AST': [AST],
+          'GGT': [GGT],
+         }
+)
+
 y_event = rsf.predict_survival_function(X, return_array=True).flatten()
 
 HCCincidence=100*(1-y_event)
