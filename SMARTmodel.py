@@ -58,31 +58,9 @@ plt.yticks([0.0, 0.2, 0.4,0.6,0.8,1.0],
             ['100%', '80%', '60%', '40%', '20%', '0%'])
 plt.savefig("img.png")
 
-X=pd.DataFrame(
-    data={'age': [age],
-          'BMI': [BMI],
-          'PLT': [PLT],
-          'AFP': [AFP],
-          'ALB': [ALB],
-          'AST': [AST],
-          'GGT': [GGT],
-         }
-)
-
-rfscore0=pd.Series(rsf.predict(X))
-rfscore=float(rfscore0)
-
 st.header("HCC risk for submitted patient")
 st.image ("img.png")
 
-if rfscore < 0.956: 
-    st.markdown("Risk grouping for HCC in the original article: Low risk")
-elif rfscore >= 3.20: 
-    st.markdown("Risk grouping for HCC in the original article: High risk")
-else:
-    st.markdown("Risk grouping for HCC in the original article: Intermediate risk")
-
-y_pred = rsf.predict(X).flatten()[0]
 y_event = rsf.predict_survival_function(X, return_array=True).flatten()
 
 HCCincidence=100*(1-y_event)
