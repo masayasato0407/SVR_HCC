@@ -89,6 +89,13 @@ three=round(three0, 3)
 five0=df_merge.iloc[63,1]
 five=round(five0, 3)
 
+if one < 0.28: 
+    st.markdown("Risk grouping for HCC in the original article: Low risk")
+elif one>= 0.63: 
+    st.markdown("Risk grouping for HCC in the original article: High risk")
+else:
+    st.markdown("Risk grouping for HCC in the original article: Intermediate risk")
+
 st.subheader("predicted HCC incidence at each time point")
 st.write(f"**predicted HCC incidence at 1 year:** {one}%")
 st.write(f"**predicted HCC incidence at 3 year:** {three}%")
