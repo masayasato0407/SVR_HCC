@@ -2,7 +2,7 @@
 # $ conda create --name <env> --file <this file>
 # platform: win-64
 streamlit
-scikit-survival==0.16.0
+scikit-survival
 scikit-learn
 numpy
 pandas
