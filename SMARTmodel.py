@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import gdown
+import gc
 import sksurv
 from sksurv.ensemble import RandomSurvivalForest
 
@@ -20,29 +21,14 @@ def load_model():
     destination = 'smartmodel.sav'
     if os.path.exists(destination):
         os.remove(destination)
-        
     file_id = st.secrets["DRIVE_FILE_ID"]
     url = f'https://drive.google.com/uc?id={file_id}'
-    
-    with st.spinner('Downloading large model via gdown... Please wait.'):
-        gdown.download(url, destination, quiet=False)
-    
-    try:
-        with open(destination, 'rb') as f:
-            model = CompatibilityUnpickler(f).load()
-        if os.path.exists(destination):
-            os.remove(destination)
-        return model
-    except Exception as e:
-        if os.path.exists(destination):
-            os.remove(destination)
-        raise e
-
-try:
-    rsf = load_model()
-except Exception as e:
-    st.error(f"Loading error: {e}")
-    st.stop()
+    gdown.download(url, destination, quiet=True)
+    with open(destination, 'rb') as f:
+        model = CompatibilityUnpickler(f).load()
+    if os.path.exists(destination):
+        os.remove(destination)
+    return model
 
 st.title('Prediction model for post-SVR HCC (SMART model)') 
 
@@ -58,6 +44,8 @@ with st.form('user_inputs'):
     submitted = st.form_submit_button('Predict')
 
 if submitted:
+    rsf = load_model()
+    
     BMI = weight / ((height/100)**2)
     X = pd.DataFrame(data={
         'age': [float(age)], 'BMI': [float(BMI)], 'PLT': [float(PLT)], 
@@ -66,7 +54,11 @@ if submitted:
     
     surv_funcs = rsf.predict_survival_function(X)
     times = rsf.unique_times_
+    y_pred = rsf.predict_survival_function(X, return_array=True)[0]
     
+    del rsf
+    gc.collect() 
+
     fig, ax = plt.subplots(figsize=(8, 5))
     for fn in surv_funcs:
         ax.step(fn.x, 1.0 - fn.y, where="post")
@@ -76,9 +68,7 @@ if submitted:
     st.pyplot(fig)
     plt.close(fig)
     
-    y_pred = rsf.predict_survival_function(X, return_array=True)[0]
     incidence = (1.0 - y_pred) * 100
-    
     def get_val(year):
         idx = (np.abs(times - year)).argmin()
         return round(incidence[idx], 3)
@@ -88,4 +78,3 @@ if submitted:
     col1.metric("1-year Risk", f"{v1}%")
     col2.metric("3-year Risk", f"{v3}%")
     col3.metric("5-year Risk", f"{v5}%")
-
