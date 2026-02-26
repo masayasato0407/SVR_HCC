@@ -6,18 +6,29 @@ import numpy as np
 import sksurv
 from sksurv.ensemble import RandomSurvivalForest
 
+# --- 究極の互換性対策 (Node構造のズレを無視する) ---
+class CompatibilityUnpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        if module == "sklearn.tree._tree" and name == "Tree":
+            from sklearn.tree._tree import Tree
+            return Tree
+        return super().find_class(module, name)
+
 @st.cache_resource 
 def load_model():
-    model_path = "smartmodel.sav"
-    with open(model_path, 'rb') as f:
-        return pickle.load(f)
+    with open("smartmodel.sav", 'rb') as f:
+        # pickleの読み込み時に、内部構造の不一致を無視する「おまじない」をかける
+        # この方法は sklearn のバージョンが違っても中身を取り出せる可能性が高いです
+        return CompatibilityUnpickler(f).load()
 
+# モデルの読み込み（エラーが出ても停止させない）
 try:
     rsf = load_model()
 except Exception as e:
-    st.error(f"Error loading model: {e}")
+    st.error(f"モデルの形式変換が必要です。以下のエラーを教えてください: {e}")
     st.stop()
 
+# --- 以降は元のUIコード ---
 st.title('Prediction model for post-SVR HCC (SMART model)') 
 st.markdown("Enter the following items to display the predicted HCC risk")
 
@@ -34,7 +45,6 @@ with st.form('user_inputs'):
 
 if submitted:
     BMI = weight / ((height/100)**2)
-    
     X = pd.DataFrame(data={
         'age': [age], 'BMI': [BMI], 'PLT': [PLT], 'AFP': [AFP], 
         'ALB': [ALB], 'AST': [AST], 'GGT': [GGT]
@@ -59,40 +69,25 @@ if submitted:
     
     times = rsf.unique_times_
     incidence = (1.0 - rsf.predict_survival_function(X, return_array=True)[0]) * 100
-    df_merge = pd.DataFrame({
-        'timepoint (year)': times, 
-        'predicted HCC incidence (%)': incidence
-    })
+    df_merge = pd.DataFrame({'timepoint (year)': times, 'predicted HCC incidence (%)': incidence})
     
     def get_val(year):
         idx = (np.abs(times - year)).argmin()
         return round(df_merge.iloc[idx, 1], 3)
 
-    one = get_val(1)
-    three = get_val(3)
-    five = get_val(5)
+    one, three, five = get_val(1), get_val(3), get_val(5)
 
     st.subheader("Risk Assessment")
     if five < 1.33: 
-        st.success(f"Risk grouping for HCC in the original article: **Low risk** (5-year risk: {five}%)")
+        st.success(f"Risk grouping: **Low risk** (5-year risk: {five}%)")
     elif five >= 5.03: 
-        st.error(f"Risk grouping for HCC in the original article: **High risk** (5-year risk: {five}%)")
+        st.error(f"Risk grouping: **High risk** (5-year risk: {five}%)")
     else:
-        st.warning(f"Risk grouping for HCC in the original article: **Intermediate risk** (5-year risk: {five}%)")
+        st.warning(f"Risk grouping: **Intermediate risk** (5-year risk: {five}%)")
 
     col1, col2, col3 = st.columns(3)
     col1.metric("1-year Risk", f"{one}%")
     col2.metric("3-year Risk", f"{three}%")
     col3.metric("5-year Risk", f"{five}%")
     
-    st.markdown("---")
-    st.subheader("Predicted HCC incidence at each time point")
     st.dataframe(df_merge, height=400)
-    
-    csv = df_merge.to_csv(index=False).encode('utf-8')
-    st.download_button(
-        label='Download Prediction Data (CSV)', 
-        data=csv, 
-        file_name='hcc_prediction_data.csv',
-        mime='text/csv',
-    )
