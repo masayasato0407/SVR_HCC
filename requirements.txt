@@ -1,7 +1,8 @@
 streamlit
-scikit-learn
-scikit-survival
-numpy<2.0.0
-matplotlib
 pandas
+matplotlib
+numpy
+scikit-survival
 gdown
+scikit-learn
+
