@@ -1,109 +1,110 @@
 import streamlit as st
-import sksurv
-from sksurv.linear_model import CoxPHSurvivalAnalysis
-from sksurv.linear_model.coxph import BreslowEstimator
+import pickle
+import sklearn
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import sksurv
 from sksurv.ensemble import RandomSurvivalForest
-import pickle
+
+class CustomUnpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        if module == "sklearn.tree._tree" and name == "Tree":
+            from sklearn.tree._tree import Tree
+            return Tree
+        return super().find_class(module, name)
 
 @st.cache_resource 
 def load_model():
-    return pickle.load(open("smartmodel.sav", 'rb'))
+    model_path = "smartmodel.sav"
+    with open(model_path, 'rb') as f:
+        try:
+            return pickle.load(f)
+        except Exception:
+            f.seek(0)
+            return CustomUnpickler(f).load()
 
-rsf = load_model()
+try:
+    rsf = load_model()
+except Exception as e:
+    st.error(f"Error loading model: {e}")
+    st.stop()
 
 st.title('Prediction model for post-SVR HCC (SMART model)') 
 st.markdown("Enter the following items to display the predicted HCC risk")
 
 with st.form('user_inputs'): 
-  age=st.number_input('age (year)', min_value=18,max_value=100) 
-  height=st.number_input('height (cm)', min_value=100.0,max_value=300.0) 
-  weight=st.number_input('body weight (kg)', min_value=20.0,max_value=300.0)     
-  PLT=st.number_input('Platelet count (×10^4/µL)', min_value=1.0,max_value=75.0)
-  AFP=st.number_input('AFP (ng/mL)', min_value=0.1,max_value=100.0) 
-  ALB=st.number_input('Albumin (g/dL)', min_value=1.0,max_value=7.0) 
-  AST=st.number_input('AST (IU/L)', min_value=1,max_value=300)
-  GGT=st.number_input('γ-GTP (IU/L)', min_value=1,max_value=1000)
-  st.form_submit_button() 
+    age = st.number_input('age (year)', min_value=18, max_value=100, value=60) 
+    height = st.number_input('height (cm)', min_value=100.0, max_value=250.0, value=160.0) 
+    weight = st.number_input('body weight (kg)', min_value=20.0, max_value=200.0, value=60.0)      
+    PLT = st.number_input('Platelet count (×10^4/µL)', min_value=1.0, max_value=75.0, value=15.0)
+    AFP = st.number_input('AFP (ng/mL)', min_value=0.1, max_value=100.0, value=5.0) 
+    ALB = st.number_input('Albumin (g/dL)', min_value=1.0, max_value=7.0, value=4.0) 
+    AST = st.number_input('AST (IU/L)', min_value=1, max_value=300, value=30)
+    GGT = st.number_input('γ-GTP (IU/L)', min_value=1, max_value=1000, value=30)
+    submitted = st.form_submit_button('Predict')
 
-height2=height*height
-BMI0=weight/height2
-BMI=BMI0*10000
+if submitted:
+    BMI = weight / ((height/100)**2)
+    
+    X = pd.DataFrame(data={
+        'age': [age], 'BMI': [BMI], 'PLT': [PLT], 'AFP': [AFP], 
+        'ALB': [ALB], 'AST': [AST], 'GGT': [GGT]
+    })
+    
+    surv_funcs = rsf.predict_survival_function(X)
+    
+    fig, ax = plt.subplots()
+    for fn in surv_funcs:
+        ax.step(fn.x, 1.0 - fn.y, where="post")
+    
+    ax.set_xlim(0, 10)
+    ax.set_ylim(0, 1)
+    ax.set_ylabel("Predicted HCC incidence")
+    ax.set_xlabel("Years after SVR")
+    ax.grid(True)
+    ax.set_yticks([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    ax.set_yticklabels(['0%', '20%', '40%', '60%', '80%', '100%'])
+    
+    st.header("HCC risk for submitted patient")
+    st.pyplot(fig)
+    
+    times = rsf.unique_times_
+    incidence = (1.0 - rsf.predict_survival_function(X, return_array=True)[0]) * 100
+    df_merge = pd.DataFrame({
+        'timepoint (year)': times, 
+        'predicted HCC incidence (%)': incidence
+    })
+    
+    def get_val(year):
+        idx = (np.abs(times - year)).argmin()
+        return round(df_merge.iloc[idx, 1], 3)
 
-surv = rsf.predict_survival_function(pd.DataFrame(
-    data={'age': [age],
-          'BMI': [BMI],
-          'PLT': [PLT],
-          'AFP': [AFP],
-          'ALB': [ALB],
-          'AST': [AST],
-          'GGT': [GGT],
-         }
-), return_array=True)
+    one = get_val(1)
+    three = get_val(3)
+    five = get_val(5)
 
-for i, s in enumerate(surv):
-    plt.step(rsf.unique_times_, s, where="post", label=str(i))
-plt.xlim(0,10)
-plt.ylim(0,1)
-plt.ylabel("predicted HCC development")
-plt.xlabel("years")
-plt.grid(True)
+    st.subheader("Risk Assessment")
+    if five < 1.33: 
+        st.success(f"Risk grouping for HCC in the original article: **Low risk** (5-year risk: {five}%)")
+    elif five >= 5.03: 
+        st.error(f"Risk grouping for HCC in the original article: **High risk** (5-year risk: {five}%)")
+    else:
+        st.warning(f"Risk grouping for HCC in the original article: **Intermediate risk** (5-year risk: {five}%)")
 
-plt.gca().invert_yaxis()
-plt.yticks([0.0, 0.2, 0.4,0.6,0.8,1.0],
-            ['100%', '80%', '60%', '40%', '20%', '0%'])
-plt.savefig("img.png")
-
-st.header("HCC risk for submitted patient")
-st.image ("img.png")
-
-X=pd.DataFrame(
-    data={'age': [age],
-          'BMI': [BMI],
-          'PLT': [PLT],
-          'AFP': [AFP],
-          'ALB': [ALB],
-          'AST': [AST],
-          'GGT': [GGT],
-         }
-)
-
-y_event = rsf.predict_survival_function(X, return_array=True).flatten()
-
-HCCincidence=100*(1-y_event)
-
-df1 = pd.DataFrame(rsf.unique_times_)
-df1.columns = ['timepoint (year)']
-df2 = pd.DataFrame(HCCincidence)
-df2.columns = ['predicted HCC incidence (%)']
-df_merge = pd.concat([df1.reset_index(drop=True), df2.reset_index(drop=True)], axis=1)
-
-one0=df_merge.iloc[82,1]
-one=round(one0, 3)
-three0=df_merge.iloc[308,1]
-three=round(three0, 3)
-five0=df_merge.iloc[652,1]
-five=round(five0, 3)
-
-if five < 1.33: 
-    st.markdown("Risk grouping for HCC in the original article: Low risk")
-elif five>= 5.03: 
-    st.markdown("Risk grouping for HCC in the original article: High risk")
-else:
-    st.markdown("Risk grouping for HCC in the original article: Intermediate risk")
-
-st.subheader("predicted HCC incidence at each time point")
-st.write(f"**predicted HCC incidence at 1 year:** {one}%")
-st.write(f"**predicted HCC incidence at 3 year:** {three}%")
-st.write(f"**predicted HCC incidence at 5 year:** {five}%")
-
-st.markdown("Raw data")
-st.dataframe (df_merge,600,800)
-csv = df_merge.to_csv(index=False).encode('SHIFT-JIS')
-st.download_button(label='Data Download', 
-                   data=csv, 
-                   file_name='simulation.csv',
-                   mime='text/csv',
-                   )
+    col1, col2, col3 = st.columns(3)
+    col1.metric("1-year Risk", f"{one}%")
+    col2.metric("3-year Risk", f"{three}%")
+    col3.metric("5-year Risk", f"{five}%")
+    
+    st.markdown("---")
+    st.subheader("Predicted HCC incidence at each time point")
+    st.dataframe(df_merge, height=400)
+    
+    csv = df_merge.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label='Download Prediction Data (CSV)', 
+        data=csv, 
+        file_name='hcc_prediction_data.csv',
+        mime='text/csv',
+    )
