@@ -4,3 +4,4 @@ scikit-survival
 numpy<2.0.0
 matplotlib
 pandas
+gdown
