@@ -16,35 +16,38 @@ class CompatibilityUnpickler(pickle.Unpickler):
         return super().find_class(module, name)
 
 def download_file_from_google_drive(id, destination):
-    URL = "https://docs.google.com/uc?export=download&confirm=t"
+    URL = "https://docs.google.com/uc?export=download&id=" + id
     session = requests.Session()
-    response = session.get(URL, params={'id': id}, stream=True)
+    response = session.get(URL, stream=True)
     
-    token = None
-    for key, value in response.cookies.items():
-        if key.startswith('download_warning'):
-            token = value
-            break
-            
-    if token:
-        response = session.get(URL, params={'id': id, 'confirm': token}, stream=True)
-    
-    if response.status_code != 200:
-        st.error(f"Download failed. Status code: {response.status_code}")
-        st.stop()
+    def get_confirm_token(response):
+        for key, value in response.cookies.items():
+            if key.startswith('download_warning'):
+                return value
+        return None
 
+    token = get_confirm_token(response)
+    if token:
+        params = {'id': id, 'confirm': token}
+        response = session.get("https://docs.google.com/uc?export=download", params=params, stream=True)
+    
     with open(destination, "wb") as f:
         for chunk in response.iter_content(32768):
-            if chunk: f.write(chunk)
+            if chunk:
+                f.write(chunk)
 
 @st.cache_resource 
 def load_model():
-    file_id = st.secrets["DRIVE_FILE_ID"]
     destination = 'smartmodel.sav'
     
-    if not os.path.exists(destination):
-        with st.spinner('Downloading model (867MB). Please wait...'):
-            download_file_from_google_drive(file_id, destination)
+    # 壊れたファイルを一度削除して確実に再ダウンロードさせる
+    if os.path.exists(destination):
+        os.remove(destination)
+        
+    file_id = st.secrets["DRIVE_FILE_ID"]
+    
+    with st.spinner('Downloading model (867MB). This may take a minute...'):
+        download_file_from_google_drive(file_id, destination)
     
     try:
         with open(destination, 'rb') as f:
@@ -55,13 +58,13 @@ def load_model():
     except Exception as e:
         if os.path.exists(destination):
             os.remove(destination)
-        st.error(f"Loading error: {e}")
-        st.stop()
+        raise e
 
 try:
     rsf = load_model()
 except Exception as e:
-    st.error(f"Model load failed: {e}")
+    st.error(f"Loading error: {e}")
+    st.info("Check if Google Drive sharing is set to 'Anyone with the link'.")
     st.stop()
 
 st.title('Prediction model for post-SVR HCC (SMART model)') 
