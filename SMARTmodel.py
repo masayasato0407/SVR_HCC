@@ -4,9 +4,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import sksurv
+import os
 from sksurv.ensemble import RandomSurvivalForest
 
-# --- 究極の互換性対策 (Node構造のズレを無視する) ---
+# --- バージョン互換性のためのクラス ---
 class CompatibilityUnpickler(pickle.Unpickler):
     def find_class(self, module, name):
         if module == "sklearn.tree._tree" and name == "Tree":
@@ -16,19 +17,24 @@ class CompatibilityUnpickler(pickle.Unpickler):
 
 @st.cache_resource 
 def load_model():
-    with open("smartmodel.sav", 'rb') as f:
-        # pickleの読み込み時に、内部構造の不一致を無視する「おまじない」をかける
-        # この方法は sklearn のバージョンが違っても中身を取り出せる可能性が高いです
-        return CompatibilityUnpickler(f).load()
+    # ファイル名をここに記載（GitHub上の大文字小文字と完全に一致させてください）
+    model_file = "smartmodel.sav"
+    
+    if not os.path.exists(model_file):
+        st.error(f"Error: '{model_file}' not found in the repository.")
+        st.stop()
+        
+    with open(model_file, 'rb') as f:
+        try:
+            return CompatibilityUnpickler(f).load()
+        except Exception as e:
+            st.error(f"Loading error: {e}")
+            st.stop()
 
-# モデルの読み込み（エラーが出ても停止させない）
-try:
-    rsf = load_model()
-except Exception as e:
-    st.error(f"モデルの形式変換が必要です。以下のエラーを教えてください: {e}")
-    st.stop()
+# モデル読み込み
+rsf = load_model()
 
-# --- 以降は元のUIコード ---
+# --- UI部分 ---
 st.title('Prediction model for post-SVR HCC (SMART model)') 
 st.markdown("Enter the following items to display the predicted HCC risk")
 
@@ -50,8 +56,11 @@ if submitted:
         'ALB': [ALB], 'AST': [AST], 'GGT': [GGT]
     })
     
+    # 予測
     surv_funcs = rsf.predict_survival_function(X)
+    times = rsf.unique_times_
     
+    # グラフ描画
     fig, ax = plt.subplots()
     for fn in surv_funcs:
         ax.step(fn.x, 1.0 - fn.y, where="post")
@@ -67,7 +76,7 @@ if submitted:
     st.header("HCC risk for submitted patient")
     st.pyplot(fig)
     
-    times = rsf.unique_times_
+    # 指標算出
     incidence = (1.0 - rsf.predict_survival_function(X, return_array=True)[0]) * 100
     df_merge = pd.DataFrame({'timepoint (year)': times, 'predicted HCC incidence (%)': incidence})
     
