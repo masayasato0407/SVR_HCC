@@ -16,41 +16,52 @@ class CompatibilityUnpickler(pickle.Unpickler):
         return super().find_class(module, name)
 
 def download_file_from_google_drive(id, destination):
-    URL = "https://docs.google.com/uc?export=download"
+    URL = "https://docs.google.com/uc?export=download&confirm=t"
     session = requests.Session()
     response = session.get(URL, params={'id': id}, stream=True)
+    
     token = None
     for key, value in response.cookies.items():
         if key.startswith('download_warning'):
             token = value
             break
+            
     if token:
-        params = {'id': id, 'confirm': token}
-        response = session.get(URL, params=params, stream=True)
+        response = session.get(URL, params={'id': id, 'confirm': token}, stream=True)
+    
+    if response.status_code != 200:
+        st.error(f"Download failed. Status code: {response.status_code}")
+        st.stop()
+
     with open(destination, "wb") as f:
         for chunk in response.iter_content(32768):
-            if chunk:
-                f.write(chunk)
+            if chunk: f.write(chunk)
 
 @st.cache_resource 
 def load_model():
     file_id = st.secrets["DRIVE_FILE_ID"]
     destination = 'smartmodel.sav'
+    
     if not os.path.exists(destination):
-        download_file_from_google_drive(file_id, destination)
+        with st.spinner('Downloading model (867MB). Please wait...'):
+            download_file_from_google_drive(file_id, destination)
     
-    with open(destination, 'rb') as f:
-        model = CompatibilityUnpickler(f).load()
-    
-    # 読み込み完了後、ディスク上の重いファイルを削除して空き容量を確保
-    if os.path.exists(destination):
-        os.remove(destination)
-    return model
+    try:
+        with open(destination, 'rb') as f:
+            model = CompatibilityUnpickler(f).load()
+        if os.path.exists(destination):
+            os.remove(destination)
+        return model
+    except Exception as e:
+        if os.path.exists(destination):
+            os.remove(destination)
+        st.error(f"Loading error: {e}")
+        st.stop()
 
 try:
     rsf = load_model()
 except Exception as e:
-    st.error(f"Error: {e}")
+    st.error(f"Model load failed: {e}")
     st.stop()
 
 st.title('Prediction model for post-SVR HCC (SMART model)') 
@@ -69,7 +80,6 @@ with st.form('user_inputs'):
 
 if submitted:
     BMI = weight / ((height/100)**2)
-    # メモリ節約のため float32 を使用
     X = pd.DataFrame(data={
         'age': [float(age)], 'BMI': [float(BMI)], 'PLT': [float(PLT)], 
         'AFP': [float(AFP)], 'ALB': [float(ALB)], 'AST': [float(AST)], 'GGT': [float(GGT)]
@@ -90,9 +100,8 @@ if submitted:
     
     st.header("HCC risk assessment")
     st.pyplot(fig)
-    plt.close(fig) # メモリ解放
+    plt.close(fig)
     
-    # リスク数値の算出
     y_pred = rsf.predict_survival_function(X, return_array=True)[0]
     incidence = (1.0 - y_pred) * 100
     df_merge = pd.DataFrame({'timepoint (year)': times, 'incidence (%)': incidence})
@@ -114,4 +123,3 @@ if submitted:
         st.error(f"Risk Group: **High Risk** (5yr: {v5}%)")
     else:
         st.warning(f"Risk Group: **Intermediate Risk** (5yr: {v5}%)")
-
