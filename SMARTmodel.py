@@ -1,28 +1,16 @@
 import streamlit as st
 import pickle
-import sklearn
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import sksurv
 from sksurv.ensemble import RandomSurvivalForest
 
-class CustomUnpickler(pickle.Unpickler):
-    def find_class(self, module, name):
-        if module == "sklearn.tree._tree" and name == "Tree":
-            from sklearn.tree._tree import Tree
-            return Tree
-        return super().find_class(module, name)
-
 @st.cache_resource 
 def load_model():
     model_path = "smartmodel.sav"
     with open(model_path, 'rb') as f:
-        try:
-            return pickle.load(f)
-        except Exception:
-            f.seek(0)
-            return CustomUnpickler(f).load()
+        return pickle.load(f)
 
 try:
     rsf = load_model()
