@@ -4,7 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-import requests
+import gdown
 import sksurv
 from sksurv.ensemble import RandomSurvivalForest
 
@@ -15,43 +15,24 @@ class CompatibilityUnpickler(pickle.Unpickler):
             return Tree
         return super().find_class(module, name)
 
-def download_file_from_google_drive(id, destination):
-    URL = "https://docs.google.com/uc?export=download&id=" + id
-    session = requests.Session()
-    response = session.get(URL, stream=True)
-    
-    def get_confirm_token(response):
-        for key, value in response.cookies.items():
-            if key.startswith('download_warning'):
-                return value
-        return None
-
-    token = get_confirm_token(response)
-    if token:
-        params = {'id': id, 'confirm': token}
-        response = session.get("https://docs.google.com/uc?export=download", params=params, stream=True)
-    
-    with open(destination, "wb") as f:
-        for chunk in response.iter_content(32768):
-            if chunk:
-                f.write(chunk)
-
 @st.cache_resource 
 def load_model():
     destination = 'smartmodel.sav'
-    
-    # 壊れたファイルを一度削除して確実に再ダウンロードさせる
+    # 以前の失敗したファイルを確実に消去
     if os.path.exists(destination):
         os.remove(destination)
         
     file_id = st.secrets["DRIVE_FILE_ID"]
+    url = f'https://drive.google.com/uc?id={file_id}'
     
-    with st.spinner('Downloading model (867MB). This may take a minute...'):
-        download_file_from_google_drive(file_id, destination)
+    with st.spinner('Downloading large model via gdown... Please wait.'):
+        # gdownは巨大ファイルの警告ページを自動で回避します
+        gdown.download(url, destination, quiet=False)
     
     try:
         with open(destination, 'rb') as f:
             model = CompatibilityUnpickler(f).load()
+        # メモリ展開後はファイルを消して容量確保
         if os.path.exists(destination):
             os.remove(destination)
         return model
@@ -64,11 +45,9 @@ try:
     rsf = load_model()
 except Exception as e:
     st.error(f"Loading error: {e}")
-    st.info("Check if Google Drive sharing is set to 'Anyone with the link'.")
     st.stop()
 
 st.title('Prediction model for post-SVR HCC (SMART model)') 
-st.markdown("Enter values to display the predicted HCC risk")
 
 with st.form('user_inputs'): 
     age = st.number_input('age (year)', min_value=18, max_value=100, value=60) 
@@ -95,34 +74,20 @@ if submitted:
     for fn in surv_funcs:
         ax.step(fn.x, 1.0 - fn.y, where="post", color="red")
     
-    ax.set_xlim(0, 10)
-    ax.set_ylim(0, 1)
-    ax.set_ylabel("Predicted HCC incidence")
-    ax.set_xlabel("Years after SVR")
-    ax.grid(True, linestyle='--')
-    
-    st.header("HCC risk assessment")
+    ax.set_xlim(0, 10); ax.set_ylim(0, 1)
+    ax.set_ylabel("Predicted HCC incidence"); ax.set_xlabel("Years after SVR"); ax.grid(True)
     st.pyplot(fig)
     plt.close(fig)
     
     y_pred = rsf.predict_survival_function(X, return_array=True)[0]
     incidence = (1.0 - y_pred) * 100
-    df_merge = pd.DataFrame({'timepoint (year)': times, 'incidence (%)': incidence})
     
     def get_val(year):
         idx = (np.abs(times - year)).argmin()
-        return round(df_merge.iloc[idx, 1], 3)
+        return round(incidence[idx], 3)
 
     v1, v3, v5 = get_val(1), get_val(3), get_val(5)
-
     col1, col2, col3 = st.columns(3)
     col1.metric("1-year Risk", f"{v1}%")
     col2.metric("3-year Risk", f"{v3}%")
     col3.metric("5-year Risk", f"{v5}%")
-    
-    if v5 < 1.33:
-        st.success(f"Risk Group: **Low Risk** (5yr: {v5}%)")
-    elif v5 >= 5.03:
-        st.error(f"Risk Group: **High Risk** (5yr: {v5}%)")
-    else:
-        st.warning(f"Risk Group: **Intermediate Risk** (5yr: {v5}%)")
