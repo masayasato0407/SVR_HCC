@@ -18,7 +18,6 @@ class CompatibilityUnpickler(pickle.Unpickler):
 @st.cache_resource 
 def load_model():
     destination = 'smartmodel.sav'
-    # 以前の失敗したファイルを確実に消去
     if os.path.exists(destination):
         os.remove(destination)
         
@@ -26,13 +25,11 @@ def load_model():
     url = f'https://drive.google.com/uc?id={file_id}'
     
     with st.spinner('Downloading large model via gdown... Please wait.'):
-        # gdownは巨大ファイルの警告ページを自動で回避します
         gdown.download(url, destination, quiet=False)
     
     try:
         with open(destination, 'rb') as f:
             model = CompatibilityUnpickler(f).load()
-        # メモリ展開後はファイルを消して容量確保
         if os.path.exists(destination):
             os.remove(destination)
         return model
@@ -72,7 +69,7 @@ if submitted:
     
     fig, ax = plt.subplots(figsize=(8, 5))
     for fn in surv_funcs:
-        ax.step(fn.x, 1.0 - fn.y, where="post", color="red")
+        ax.step(fn.x, 1.0 - fn.y, where="post")
     
     ax.set_xlim(0, 10); ax.set_ylim(0, 1)
     ax.set_ylabel("Predicted HCC incidence"); ax.set_xlabel("Years after SVR"); ax.grid(True)
@@ -91,3 +88,4 @@ if submitted:
     col1.metric("1-year Risk", f"{v1}%")
     col2.metric("3-year Risk", f"{v3}%")
     col3.metric("5-year Risk", f"{v5}%")
+
