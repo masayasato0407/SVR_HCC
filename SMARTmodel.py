@@ -1,6 +1,6 @@
 import streamlit as st
 import pickle
-import pd as pd
+import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -114,3 +114,4 @@ if submitted:
         st.error(f"Risk Group: **High Risk** (5yr: {v5}%)")
     else:
         st.warning(f"Risk Group: **Intermediate Risk** (5yr: {v5}%)")
+
